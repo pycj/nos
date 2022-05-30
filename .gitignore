@@ -1,0 +1,10 @@
+*.img
+*.vmdk
+*.o
+*.bin
+*.out
+*.map
+*.ini
+*.txt
+/build/
+.clang-format
