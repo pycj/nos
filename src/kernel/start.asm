@@ -1,6 +1,9 @@
-db 0x68
+[bits 32]
 global _start
-extern main
-
+extern kernel_init
+extern console_init
 _start:
-    call main
+    push eax
+    push ebx
+    call kernel_init
+    call console_init

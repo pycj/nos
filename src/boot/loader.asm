@@ -12,23 +12,10 @@ mov di,membuf
 xor ebx,ebx
 mov edx,0x534d4150
 call detect_memory
-xchg bx,bx
 
-;;;loader kernel
+;;enter protect mode and loader kernel
 mov si,loading
 call print
-
-mov ebx,5; sec num
-mov edi,0x1000; addr
-mov cl,200; sec count
-call read_disk
-;check
-mov ax,0
-mov ds,ax
-cmp byte [ds:0000], 0x68; means 'h' of ascii
-mov al,0
-jne error
-
 jmp protect_mode
 
 detect_memory:
@@ -36,12 +23,9 @@ detect_memory:
     mov eax,0xe820
     int 0x15
 
-    push eax
-    mov al,1
-    jc error
-    pop eax
 
-xchg bx,bx
+    jc error
+    
     cmp ebx,0
     je .done
 
@@ -51,8 +35,57 @@ xchg bx,bx
     .done:
 ret
 
-protect_mode:
+error:
+    mov si,detecting_errormsg
+    call print
+    hlt
+    jmp $
 
+print:
+    mov ah,0x0e
+    .next:
+        mov al,[si]
+        cmp al,0
+        je .done
+        int 0x10
+        inc si
+        jmp .next
+    .done:
+        ret
+
+protect_mode:
+    cli
+    in al, 0x92
+    or al,10b
+    out 0x92,al
+
+    lgdt [gdtptr]
+    mov eax,cr0
+    or eax,1b
+    mov cr0,eax
+
+    jmp dword code_selector:prot
+
+[bits 32]
+
+    prot:
+        mov ax,data_selector
+        mov ds,ax
+        mov es,ax
+        mov gs,ax
+        mov fs,ax
+        mov ss,ax
+        mov esp,0x10000
+
+        mov ebx,5; sec num
+        mov edi,0x10000; addr
+        mov cl,200; sec count
+        call read_disk
+
+        mov eax,0x68686169
+        mov ebx,ardscnt
+        jmp 0x10000
+        ud2
 
 read_disk:
     ; call .wait
@@ -113,66 +146,49 @@ ret
             loop .read_write_start
         ret
 
-error:
-    cmp al,0
-    je .loading
-    cmp al,1
-    je .detect
-    .loading:
-        mov si,loading_errormsg
-        call print
-        jmp .done
-    .detect:
-        mov si,detecting_errormsg
-        call print
-        jmp .done
-    .done:
-    hlt
-    jmp $
-
-print:
-    mov ah,0x0e
-    .next:
-        mov al,[si]
-        cmp al,0
-        je .done
-        int 0x10
-        inc si
-        jmp .next
-    .done:
-        ret
-
 loading: db "loading nos......",10,13,0
-loading_errormsg: db "loading nos error......",10,13,0
 detecting: db "detecting memory......",10,13,0
 detecting_errormsg: db "detecting memory error......",10,13,0
 
-code_selector equ (1 << (3))
-data_selector equ (2 <<(3))
-video_selector equ (3 <<(3))
+code_selector  equ (1 << 3)
+data_selector  equ (2 << 3)
+video_selector equ (3 << 3)
 
-limit equ (1024 * 1024 * 1024) / (4 * 1024) - 1
+; limit equ (1024 * 1024 * 1024 * 4) / (4 * 1024) - 1
+limit equ 0xffffffff
 base equ 0
 code_type equ 0xa
 data_type equ 0x2
 gdtstart:
+null_desc:
+    dd 0
+    dd 0
 code_desc:
-    dd ((base) & 0xff << 24) | 0xc | (limit & 0xf0000) \
-    | 0x9 | code_type | (base & 0x00)
-    dd (base & 0xffff) | (limit & 0x0ffff)
+    dw limit & 0xffff
+    dw base & 0xffff
+    db (base >> 16) & 0xff
+    db 0x90 | code_type
+    db 11000000b | ((limit >> 16) & 0xf)
+    db (base >> 24) & 0xff
 data_desc:
-    dd ((base) & 0xff << 24) | 0xc | (limit & 0xf0000) \
-    | 0x9 | data_type | (base & 0x00)
-    dd (base & 0xffff) | (limit & 0x0ffff)
+    dw limit & 0xffff
+    dw base & 0xffff
+    db (base >> 16) & 0xff
+    db 0x90 | data_type
+    db 11000000b | ((limit >> 16) & 0xf)
+    db (base >> 24) & 0xff
 video_desc:
-    dd ((base) & 0xff << 24) | 0xc | (limit & 0xf0000) \
-    | 0x9 | data_type | (base & 0x0b)
-    dd (base & 0x8fff) | (limit & 0x0ffff)
+    dw 0x0007
+    dw 0x8000
+    db 0x0b
+    db 0x90 | data_type
+    db 11000000b
+    db 0
 gdtend:
 
 gdtptr:
-    dd gdtstart
     dw gdtend - gdtstart -1
+    dd gdtstart
 ardscnt:
-    db 0
+    dd 0
 membuf: 

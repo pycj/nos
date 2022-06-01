@@ -25,13 +25,20 @@ INCLUDE:=-I$(SRC)/include
 
 ../build/kernel/%.o: ./kernel/%.asm
 	$(shell mkdir -p $(dir $@))
-	nasm -f elf32 $(NASMDEBUG) -o $@ $<
+	nasm -f elf32 -g -F dwarf -o $@ $<
+
+../build/lib/%.o: ./lib/%.c
+	$(shell mkdir -p $(dir $@))
+	gcc $(CFLAGS) $(DEBUG) $(INCLUDE) -c -o $@ $<
 
 ../build/kernel/%.o: ./kernel/%.c
-	gcc $(CFLAGS) $(DEBUG) -c -o $@ $<
+	gcc $(CFLAGS) $(DEBUG) $(INCLUDE) -c -o $@ $<
 
 ../build/kernel.bin: ../build/kernel/start.o \
-					 ../build/kernel/main.o
+					 ../build/kernel/main.o \
+					 ../build/kernel/io.o \
+					 ../build/lib/string.o \
+					 ../build/kernel/console.o
 	ld -melf_i386 -static -Ttext $(ENTRYPOINT) -o $@ $^
 
 ../build/system.bin: ../build/kernel.bin
@@ -50,6 +57,10 @@ INCLUDE:=-I$(SRC)/include
 
 .PHONY: test
 test:../build/master.img ../build/system.map
+
+.PHONY: bochsgdb
+bochsgdb: ../build/master.img
+	bochsgdb -q -f bochsgdbrc
 
 .PHONY: bochs
 bochs: ../build/master.img
