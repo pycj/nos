@@ -6,4 +6,3 @@ _start:
     push eax
     push ebx
     call kernel_init
-    call console_init

@@ -5,6 +5,6 @@
 
 void console_init();
 void console_clear();
-void console_write(char *buf, int count);
+void console_write(u8 *buf, u32 count);
 
 #endif
