@@ -19,35 +19,44 @@ DEBUG:= -g
 NASMDEBUG:= -gdwarf
 INCLUDE:=-I$(SRC)/include
 
-../build/boot/%.bin: ./boot/%.asm
+$(BUILD)/boot/%.bin: ./boot/%.asm
 	$(shell mkdir -p $(dir $@))
 	nasm -f bin -o $@ $<
 
-../build/kernel/%.o: ./kernel/%.asm
+$(BUILD)/kernel/%.o: ./kernel/%.asm
 	$(shell mkdir -p $(dir $@))
-	nasm -f elf32 -g -F dwarf -o $@ $<
+	nasm -f elf32 $(NASMDEBUG) -o $@ $<
 
-../build/lib/%.o: ./lib/%.c
+$(BUILD)/lib/%.o: ./lib/%.c
 	$(shell mkdir -p $(dir $@))
 	gcc $(CFLAGS) $(DEBUG) $(INCLUDE) -c -o $@ $<
 
-../build/kernel/%.o: ./kernel/%.c
+$(BUILD)/kernel/%.o: ./kernel/%.c
 	gcc $(CFLAGS) $(DEBUG) $(INCLUDE) -c -o $@ $<
 
-../build/kernel.bin: ../build/kernel/start.o \
+$(BUILD)/kernel.bin: ../build/kernel/start.o \
 					 ../build/kernel/main.o \
 					 ../build/kernel/io.o \
 					 ../build/lib/string.o \
-					 ../build/kernel/console.o
+					 ../build/kernel/console.o \
+					 ../build/lib/vsprintf.o \
+					 ../build/kernel/printk.o \
+					 ../build/kernel/assert.o \
+					 ../build/kernel/debug.o \
+					 ../build/kernel/global.o \
+					 ../build/kernel/task.o \
+					 ../build/kernel/schedule.o \
+					 ../build/kernel/interrupt.o \
+					 ../build/kernel/handler.o 
 	ld -melf_i386 -static -Ttext $(ENTRYPOINT) -o $@ $^
 
-../build/system.bin: ../build/kernel.bin
+$(BUILD)/system.bin: ../build/kernel.bin
 	objcopy -O binary $< $@
 
-../build/system.map: ../build/kernel.bin
+$(BUILD)/system.map: ../build/kernel.bin
 	nm $< | sort > $@
 
-../build/master.img: ../build/boot/boot.bin \
+$(BUILD)/master.img: ../build/boot/boot.bin \
 					 ../build/boot/loader.bin \
 					 ../build/system.bin
 	yes | bximage -mode=create -hd=16 -sectsize=512 -q $@
@@ -56,7 +65,7 @@ INCLUDE:=-I$(SRC)/include
 	dd if=../build/system.bin of=$@ count=200 bs=512 conv=notrunc seek=5
 
 .PHONY: test
-test:../build/master.img ../build/system.map
+test:$(BUILD)/master.img $(BUILD)/system.map
 
 .PHONY: bochsgdb
 bochsgdb: ../build/master.img
@@ -65,6 +74,21 @@ bochsgdb: ../build/master.img
 .PHONY: bochs
 bochs: ../build/master.img
 	bochs -q
+
+.PHONE: qemu
+qemu: $(BUILD)/master.img
+	qemu-system-i386 \
+	-m 32M \
+	-boot c \
+	-hda $<
+
+.PHONE: qemug
+qemug: $(BUILD)/master.img
+	qemu-system-i386 \
+	-s -S \
+	-m 32M \
+	-boot c \
+	-hda $< 
 
 .PHONY: clean
 clean:

@@ -152,7 +152,6 @@ detecting_errormsg: db "detecting memory error......",10,13,0
 
 code_selector  equ (1 << 3)
 data_selector  equ (2 << 3)
-video_selector equ (3 << 3)
 
 ; limit equ (1024 * 1024 * 1024 * 4) / (4 * 1024) - 1
 limit equ 0xffffffff

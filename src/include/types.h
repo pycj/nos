@@ -6,9 +6,9 @@
 #define NULL (void *)0
 #define false 0
 #define true 1
-#define bool _BOOL
+#define bool _Bool
 
-#define _packed __attribuite__((packed))
+#define _packed __attribute__((packed))
 
 typedef unsigned int size_t;
 
