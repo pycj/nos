@@ -9,13 +9,17 @@
 #include "../include/global.h"
 #include "../include/interrupt.h"
 
-u8 message[] = "Hello, world\n";
+u8 message[] = "Hello, Nos\n";
 u8 buf[1024];
 
 void kernel_init() {
     console_init();
-    gdt_init();
-    // task_init();
-    interrupt_init();
+    console_write(message, 13);
+    while (1) {
+    ;
+    }
+    //gdt_init();
+    //task_init();
+    //interrupt_init();
 
 }
