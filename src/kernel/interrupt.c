@@ -2,11 +2,21 @@
 #include "../include/global.h"
 #include "../include/debug.h"
 #include "../include/printk.h"
+#include "../include/io.h"
+#include "../include/stdlib.h"
 
-#define ENTRY_SIZE 0x20
+#define LOGK(fmt, args...) DEBUGK(fmt, ##args)
+
+#define ENTRY_SIZE 0x30
+
+#define PIC_M_CTRL 0x20
+#define PIC_M_DATA 0x21
+#define PIC_S_CTRL 0xa0
+#define PIC_S_DATA 0xa1
+#define PIC_EOI 0x20
 
 gate_t idt[IDT_SIZE];
-pointer_t idt_ptr;
+gdt_pointer_t idt_ptr;
 
 handler_t handler_table[IDT_SIZE];
 extern handler_t handler_entry_table[ENTRY_SIZE];
@@ -35,6 +45,22 @@ static char *messages[] = {
     "#CP Control Protection Exception\0",
 };
 
+void send_eoi(int vector){
+    if (vector >= 0x20 && vector < 0x28) {
+        outb(PIC_M_CTRL, PIC_EOI);
+    }
+    if (vector >= 0x28 && vector < 0x30) {
+        outb(PIC_M_CTRL, PIC_EOI);
+        outb(PIC_S_CTRL, PIC_EOI);
+    }
+}
+
+u32 counter = 0;
+void default_handler(int vector){
+    send_eoi(vector);
+    LOGK("[%d] default interrupt called %d...\n", vector, counter++);
+
+}
 void exception_handler(int vector) {
     char *message = NULL;
     if (vector < 22) {
@@ -43,12 +69,24 @@ void exception_handler(int vector) {
         message = messages[15];
     }
     printk("Exception : [0x%02X] %s \n", vector, messages[vector]);
+    hang();
 }
 
+void pic_init(){
+    outb(PIC_M_CTRL, 0b00010001);
+    outb(PIC_M_DATA, 0x20);
+    outb(PIC_M_DATA, 0b00000100);
+    outb(PIC_M_DATA, 0b00000001);
+
+    outb(PIC_S_CTRL, 0b00010001);
+    outb(PIC_S_DATA, 0x28);
+    outb(PIC_S_DATA, 2);
+    outb(PIC_S_DATA, 0b00000001);
+}
 extern void interrupt_handler();
 
-void interrupt_init() {
-    for (size_t i = 0; i < IDT_SIZE; i++) {
+void idt_init() {
+    for (size_t i = 0; i < ENTRY_SIZE; i++) {
         gate_t *gate = &idt[i];
         handler_t handler = handler_entry_table[i];
         gate->offset0 = (u32)handler & 0xffff;
@@ -63,8 +101,15 @@ void interrupt_init() {
     for (size_t i = 0; i < 0x20; i++) {
         handler_table[i] = exception_handler;
     }
+    for (size_t i = 20; i < ENTRY_SIZE; i++) {
+        handler_table[i] = default_handler;
+    }
 
     idt_ptr.base = (u32)idt;
     idt_ptr.limit = sizeof(idt) - 1;
     asm volatile("lidt idt_ptr\n");
+}
+void interrupt_init(){
+    pic_init();
+    idt_init();
 }

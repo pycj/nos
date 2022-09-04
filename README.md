@@ -3,6 +3,10 @@
 
 ## note
 * Make sure you have these tools: gcc make qemu-system-i386 bochs
+* on ubuntu
+```
+sudo apt install qemu-system-x86 bochs
+```
 * Make sure these enviroment variables in your PATH: bochs bximage qemu-system-i386
 
 ## run

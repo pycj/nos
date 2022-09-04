@@ -8,18 +8,21 @@
 #include "../include/debug.h"
 #include "../include/global.h"
 #include "../include/interrupt.h"
+#include "../include/stdlib.h"
 
 u8 message[] = "Hello, Nos\n";
 u8 buf[1024];
 
 void kernel_init() {
     console_init();
-    console_write(message, 13);
-    while (1) {
-    ;
+    gdt_init();
+    interrupt_init();
+    asm volatile("sti\n"
+                "movl %eax, %eax\n");
+    u32 counter = 0;
+    while (true) {
+        DEBUGK("looping in kernel init %d...\n", counter++);
+        delay(0xffffffff);
     }
-    //gdt_init();
-    //task_init();
-    //interrupt_init();
-
+    return;
 }

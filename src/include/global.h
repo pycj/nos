@@ -6,7 +6,7 @@
 #define GDT_SIZE 128
 
 // 全局描述符
-typedef struct descriptor_t /* 共 8 个字节 */
+typedef struct gdt_t /* 共 8 个字节 */
 {
     unsigned short limit_low;      // 段界限 0 ~ 15 位
     unsigned int base_low : 24;    // 基地址 0 ~ 23 位 16M
@@ -20,7 +20,7 @@ typedef struct descriptor_t /* 共 8 个字节 */
     unsigned char big : 1;         // 32 位 还是 16 位;
     unsigned char granularity : 1; // 粒度 4KB 或 1B
     unsigned char base_high;       // 基地址 24 ~ 31 位
-} _packed descriptor_t;
+} _packed gdt_t;
 
 // 段选择子
 typedef struct selector_t {
@@ -30,10 +30,10 @@ typedef struct selector_t {
 } selector_t;
 
 // 全局描述符表指针
-typedef struct pointer_t {
+typedef struct gdt_pointer_t {
     u16 limit;
     u32 base;
-} _packed pointer_t;
+} _packed gdt_pointer_t;
 
 void gdt_init();
 

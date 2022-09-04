@@ -1,23 +1,22 @@
-BUILD:=../build
-SRC:=.
+BUILD=../build
+SRC=.
 
 DEBUG=-g
 DWARF=DWARF
 
 ENTRYPOINT:=0x10000
 
-CFLAGS:=-m32
+CFLAGS=-m32
 CFLAGS+=-fno-builtin
 CFLAGS+=-nostdinc
 CFLAGS+=-fno-pic
 CFLAGS+=-fno-pie
 CFLAGS+=-nostdlib
 CFLAGS+=-fno-stack-protector
-CFLAGS:=$(strip ${CFLAGS})
 
-DEBUG:= -g
-NASMDEBUG:= -gdwarf
-INCLUDE:=-I$(SRC)/include
+DEBUG= -g
+NASMDEBUG= -gdwarf
+INCLUDE=-I$(SRC)/include
 
 $(BUILD)/boot/%.bin: ./boot/%.asm
 	$(shell mkdir -p $(dir $@))
@@ -37,17 +36,18 @@ $(BUILD)/kernel/%.o: ./kernel/%.c
 $(BUILD)/kernel.bin: ../build/kernel/start.o \
 					 ../build/kernel/main.o \
 					 ../build/kernel/io.o \
-					 ../build/lib/string.o \
 					 ../build/kernel/console.o \
-					 ../build/lib/vsprintf.o \
 					 ../build/kernel/printk.o \
 					 ../build/kernel/assert.o \
 					 ../build/kernel/debug.o \
 					 ../build/kernel/global.o \
 					 ../build/kernel/task.o \
 					 ../build/kernel/schedule.o \
+					 ../build/kernel/handler.o \
 					 ../build/kernel/interrupt.o \
-					 ../build/kernel/handler.o 
+					 ../build/lib/string.o \
+					 ../build/lib/vsprintf.o \
+					 ../build/lib/stdlib.o 
 	ld -melf_i386 -static -Ttext $(ENTRYPOINT) -o $@ $^
 
 $(BUILD)/system.bin: ../build/kernel.bin
@@ -80,7 +80,7 @@ qemu: $(BUILD)/master.img
 	qemu-system-i386 \
 	-m 32M \
 	-boot c \
-	-hda $<
+	-hda $< \
 
 .PHONE: qemug
 qemug: $(BUILD)/master.img

@@ -1,5 +1,5 @@
-#ifndef NOS_TASK_H
-#define NOS_TASK_H
+#ifndef __NOS_TASK_H__
+#define __NOS_TASK_H__
 
 #include "../include/types.h"
 
