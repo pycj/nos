@@ -95,12 +95,21 @@ void *memset(void *dest, int ch, size_t count) {
     return dest;
 }
 void *memcpy(void *dest, const void *src, size_t count) {
-    u8 *ptr = (u8 *)dest;
-    while (count) {
-        *ptr = *(u8 *)src;
-        ptr++;
-        src++;
-        count--;
+    if (dest == NULL || src == NULL) {
+        return NULL;
+    }
+    u8 *d = (u8 *)dest;
+    u8 *s = (u8 *)src;
+    if (((src+count) < dest) || (dest < src)) {
+        while (count--) {
+            *d++ = *s++;
+        }
+        return dest;
+    }
+    d+=count;
+    s+=count;
+    while (count--) {
+        *d-- = *s--;
     }
     return dest;
 }

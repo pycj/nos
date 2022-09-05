@@ -1,5 +1,7 @@
 #include "../include/console.h"
 #include "../include/string.h"
+#include "../include/io.h"
+#include "../include/interrupt.h"
 
 #define CRT_ADDR_REG 0x3D4 // CRT(6845)索引寄存器
 #define CRT_DATA_REG 0x3D5 // CRT(6845)数据寄存器
@@ -142,7 +144,8 @@ void console_write(u8 *buf, u32 count) {
     // bool intr = interrupt_disable(); // 禁止中断
 
     char ch;
-    while (count--) {
+    int32 nr = 0;
+    while (nr++ < count) {
         ch = *buf++;
         switch (ch) {
         case ASCII_NUL:

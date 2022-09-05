@@ -8,21 +8,35 @@ section .text
 %macro INTERRUPT_HANDLER 2
 interrupt_handler_%1:
 %ifn %2
-    xchg bx,bx
     push 0x20222202
 %endif
-    xchg bx,bx
     push %1
     jmp interrupt_entry
 %endmacro
 
 interrupt_entry:
-    mov eax,[esp]
+
+    push ds
+    push es
+    push fs
+    push gs
+    pusha
+
+
+    mov eax,[esp + 12 * 4]
+    push eax
 
     call [handler_table + eax * 4]
 
-    add esp,8
-    xchg bx,bx
+    add esp,4
+
+    popa
+    pop gs
+    pop fs
+    pop es
+    pop ds
+
+    add esp, 8
     iret
 
 INTERRUPT_HANDLER 0x00,0
@@ -81,10 +95,11 @@ INTERRUPT_HANDLER 0x2c,0
 INTERRUPT_HANDLER 0x2d,0
 INTERRUPT_HANDLER 0x2e,0
 INTERRUPT_HANDLER 0x2f,0
+
 section .data
 global handler_entry_table
 handler_entry_table:
-    dd interrupt_handler_0x00
+    dd interrupt_handler_0x00 ;用符号的值给dd的数据赋值
     dd interrupt_handler_0x01
     dd interrupt_handler_0x02
     dd interrupt_handler_0x03

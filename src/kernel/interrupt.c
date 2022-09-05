@@ -1,8 +1,8 @@
-#include "../include/interrupt.h"
-#include "../include/global.h"
 #include "../include/debug.h"
-#include "../include/printk.h"
+#include "../include/global.h"
+#include "../include/interrupt.h"
 #include "../include/io.h"
+#include "../include/printk.h"
 #include "../include/stdlib.h"
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
@@ -45,7 +45,7 @@ static char *messages[] = {
     "#CP Control Protection Exception\0",
 };
 
-void send_eoi(int vector){
+void send_eoi(int vector) {
     if (vector >= 0x20 && vector < 0x28) {
         outb(PIC_M_CTRL, PIC_EOI);
     }
@@ -54,25 +54,33 @@ void send_eoi(int vector){
         outb(PIC_S_CTRL, PIC_EOI);
     }
 }
+extern void schedule();
 
-u32 counter = 0;
-void default_handler(int vector){
+void default_handler(int vector) {
     send_eoi(vector);
-    LOGK("[%d] default interrupt called %d...\n", vector, counter++);
-
+    schedule();
 }
-void exception_handler(int vector) {
+void exception_handler(int vector, u32 edi, u32 esi, u32 ebp, u32 esp, u32 ebx,
+                       u32 edx, u32 ecx, u32 eax, u32 gs, u32 fs, u32 es,
+                       u32 ds, u32 vector0, u32 error, u32 eip, u32 cs,
+                       u32 eflags) {
     char *message = NULL;
     if (vector < 22) {
         message = messages[vector];
     } else {
         message = messages[15];
     }
-    printk("Exception : [0x%02X] %s \n", vector, messages[vector]);
+    printk("\nException : %s", messages[vector]);
+    printk("\nVector    : 0x%02X", vector);
+    printk("\nError     : 0x%08X", error);
+    printk("\nEflags    : 0x%08X", eflags);
+    printk("\nCS        : 0x%02X", cs);
+    printk("\nEIP       : 0x%08X", eip);
+    printk("\nESP       : 0x%08X", esp);
     hang();
 }
 
-void pic_init(){
+void pic_init() {
     outb(PIC_M_CTRL, 0b00010001);
     outb(PIC_M_DATA, 0x20);
     outb(PIC_M_DATA, 0b00000100);
@@ -82,6 +90,9 @@ void pic_init(){
     outb(PIC_S_DATA, 0x28);
     outb(PIC_S_DATA, 2);
     outb(PIC_S_DATA, 0b00000001);
+
+    outb(PIC_M_CTRL, 0b11111111);
+    outb(PIC_S_CTRL, 0b11111111);
 }
 extern void interrupt_handler();
 
@@ -109,7 +120,7 @@ void idt_init() {
     idt_ptr.limit = sizeof(idt) - 1;
     asm volatile("lidt idt_ptr\n");
 }
-void interrupt_init(){
+void interrupt_init() {
     pic_init();
     idt_init();
 }
