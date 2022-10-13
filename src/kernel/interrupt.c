@@ -91,8 +91,8 @@ void pic_init() {
     outb(PIC_S_DATA, 2);
     outb(PIC_S_DATA, 0b00000001);
 
-    outb(PIC_M_CTRL, 0b11111111);
-    outb(PIC_S_CTRL, 0b11111111);
+    outb(PIC_M_DATA, 0b11111110);
+    outb(PIC_S_DATA, 0b11111111);
 }
 extern void interrupt_handler();
 
@@ -112,7 +112,7 @@ void idt_init() {
     for (size_t i = 0; i < 0x20; i++) {
         handler_table[i] = exception_handler;
     }
-    for (size_t i = 20; i < ENTRY_SIZE; i++) {
+    for (size_t i = 0x20; i < ENTRY_SIZE; i++) {
         handler_table[i] = default_handler;
     }
 

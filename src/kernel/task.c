@@ -20,13 +20,13 @@ void schedule() {
     task_switch(next);
 }
 
-u32 _ofp thread_b() {
+u32 thread_b() {
     asm volatile("sti\n");
     while (true) {
         printk("B");
     }
 }
-u32 _ofp thread_a() {
+u32 thread_a() {
     asm volatile("sti\n");
     while (true) {
         printk("A");

@@ -8,7 +8,8 @@
 *.txt
 /build/
 /test/
-src/compile_commands.json
+#src/compile_commands.json
 src/.cache/
+src/.clangd/
 .local_history/
 .clang-format
